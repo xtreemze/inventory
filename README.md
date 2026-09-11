@@ -52,7 +52,9 @@ Use **Data → Export JSON backup** before browser resets, migrations, or risky 
 
 ## Deployment
 
-`.github/workflows/pages.yml` deploys the static application to GitHub Pages from `master`. The repository contains no runtime secrets and the app makes no external network requests.
+This repository retains its established GitHub Pages publishing source: the `gh-pages` branch. The application is static and includes `.nojekyll`; publishing consists of synchronizing a verified `master` revision to `gh-pages`. This keeps deployment aligned with the repository's existing Pages environment policy rather than granting a second deployment source.
+
+The repository contains no runtime secrets and the app makes no external network requests.
 
 ## Architecture
 
