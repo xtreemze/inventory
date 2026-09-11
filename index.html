@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111827">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta id="theme-color" name="theme-color" content="#f3f4f6">
+  <meta name="color-scheme" content="light dark">
   <meta name="description" content="A local-first inventory manager for tracking stock, checkouts, returns, and activity.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
   <title>Inventory</title>
@@ -23,7 +24,10 @@
       <button class="nav-tab" data-view="activity" type="button">Activity</button>
       <button class="nav-tab" data-view="data" type="button">Data</button>
     </nav>
-    <label class="operator-field"><span>Operator</span><input id="operator" autocomplete="name" maxlength="80" placeholder="Local audit label"></label>
+    <div class="header-tools">
+      <label class="theme-field"><span>Theme</span><select id="theme" aria-label="Theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label class="operator-field"><span>Operator</span><input id="operator" autocomplete="name" maxlength="80" placeholder="Local audit label"></label>
+    </div>
   </header>
 
   <main id="main" class="shell">
