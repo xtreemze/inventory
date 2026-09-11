@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Inventory</title>
+  <rect width="512" height="512" rx="112" fill="#111827"/>
+  <path d="M128 145c0-18 14-32 32-32h192c18 0 32 14 32 32v222c0 18-14 32-32 32H160c-18 0-32-14-32-32V145Zm58 22v54h140v-54H186Zm0 102v76h54v-76h-54Zm86 0v76h54v-76h-54Z" fill="#f9fafb"/>
+</svg>
