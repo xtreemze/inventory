@@ -5,10 +5,12 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const elements = {
   list: $("#inventory-list"), empty: $("#inventory-empty"), activity: $("#activity-list"), activityEmpty: $("#activity-empty"),
-  search: $("#search"), category: $("#filter-category"), location: $("#filter-location"), status: $("#filter-status"), operator: $("#operator"),
-  itemDialog: $("#item-dialog"), itemForm: $("#item-form"), checkoutDialog: $("#checkout-dialog"), checkoutForm: $("#checkout-form"), returnDialog: $("#return-dialog"), returnForm: $("#return-form"), toast: $("#toast")
+  search: $("#search"), category: $("#filter-category"), location: $("#filter-location"), status: $("#filter-status"), operator: $("#operator"), theme: $("#theme"),
+  itemDialog: $("#item-dialog"), itemForm: $("#item-form"), checkoutDialog: $("#checkout-dialog"), checkoutForm: $("#checkout-form"), returnDialog: $("#return-dialog"), returnForm: $("#return-form"), toast: $("#toast"), themeColor: $("#theme-color")
 };
 
+const THEME_STORAGE_KEY = "inventory-theme";
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 let state = emptyState();
 let toastTimer;
 
@@ -21,6 +23,30 @@ function node(tag, options = {}, children = []) {
   return element;
 }
 
+function readThemePreference() {
+  try {
+    const value = localStorage.getItem(THEME_STORAGE_KEY);
+    return ["light", "dark", "system"].includes(value) ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function applyTheme(theme, persist = false) {
+  const preference = ["light", "dark", "system"].includes(theme) ? theme : "system";
+  if (preference === "system") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = preference;
+  elements.theme.value = preference;
+  const effectiveTheme = preference === "system" ? (systemTheme.matches ? "dark" : "light") : preference;
+  elements.themeColor.content = effectiveTheme === "dark" ? "#090e19" : "#f3f4f6";
+  if (persist) {
+    try { localStorage.setItem(THEME_STORAGE_KEY, preference); } catch { /* Storage can be unavailable in privacy modes. */ }
+  }
+}
+
+applyTheme(readThemePreference());
+systemTheme.addEventListener?.("change", () => { if (elements.theme.value === "system") applyTheme("system"); });
+
 const safeDate = value => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Unknown date" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
@@ -30,7 +56,12 @@ function showToast(message) {
   clearTimeout(toastTimer);
   elements.toast.textContent = message;
   elements.toast.hidden = false;
-  toastTimer = setTimeout(() => { elements.toast.hidden = true; }, 3600);
+  elements.toast.classList.remove("is-visible");
+  requestAnimationFrame(() => elements.toast.classList.add("is-visible"));
+  toastTimer = setTimeout(() => {
+    elements.toast.classList.remove("is-visible");
+    elements.toast.hidden = true;
+  }, 3600);
 }
 
 const operator = () => elements.operator.value.trim() || "Local operator";
@@ -43,12 +74,22 @@ async function commit(nextState, message) {
   if (message) showToast(message);
 }
 
+function updateMetric(selector, value) {
+  const target = $(selector);
+  const next = String(value);
+  if (target.textContent === next) return;
+  target.textContent = next;
+  const metric = target.closest(".metric");
+  metric?.classList.remove("is-updated");
+  requestAnimationFrame(() => metric?.classList.add("is-updated"));
+}
+
 function renderSummary() {
   const active = state.items.filter(item => !item.archivedAt);
-  $("#metric-items").textContent = active.length;
-  $("#metric-units").textContent = active.reduce((sum, item) => sum + item.quantity, 0);
-  $("#metric-out").textContent = active.reduce((sum, item) => sum + item.checkedOut, 0);
-  $("#metric-low").textContent = active.filter(item => ["low", "out"].includes(itemStatus(item))).length;
+  updateMetric("#metric-items", active.length);
+  updateMetric("#metric-units", active.reduce((sum, item) => sum + item.quantity, 0));
+  updateMetric("#metric-out", active.reduce((sum, item) => sum + item.checkedOut, 0));
+  updateMetric("#metric-low", active.filter(item => ["low", "out"].includes(itemStatus(item))).length);
 }
 
 function refreshFilterOptions() {
@@ -99,9 +140,12 @@ function renderInventory() {
       actions.append(actionButton("Restore", "restore", item), actionButton("Edit", "edit", item));
     }
     const statusLabel = statusValue === "low" ? "Low" : statusValue === "out" ? "Checked out" : statusValue[0].toUpperCase() + statusValue.slice(1);
-    elements.list.append(node("tr", {}, [
-      node("td", {}, [title]), node("td", {}, [availability]), node("td", { text: item.location || "—" }),
-      node("td", {}, [node("span", { className: `badge ${statusValue}`, text: statusLabel })]), node("td", {}, [actions])
+    elements.list.append(node("tr", { className: "inventory-row", attrs: { "data-status": statusValue } }, [
+      node("td", { attrs: { "data-label": "Item" } }, [title]),
+      node("td", { attrs: { "data-label": "Availability" } }, [availability]),
+      node("td", { text: item.location || "—", attrs: { "data-label": "Location" } }),
+      node("td", { attrs: { "data-label": "Status" } }, [node("span", { className: `badge ${statusValue}`, text: statusLabel })]),
+      node("td", { attrs: { "data-label": "Actions" } }, [actions])
     ]));
   }
   elements.empty.hidden = rows.length > 0;
@@ -130,8 +174,23 @@ function renderActivity() {
 function render() { renderSummary(); renderInventory(); renderActivity(); }
 
 function showView(view) {
-  $$(".view").forEach(section => { section.hidden = section.id !== `view-${view}`; });
-  $$(".nav-tab").forEach(button => button.classList.toggle("is-active", button.dataset.view === view));
+  let activeView;
+  $$(".view").forEach(section => {
+    const active = section.id === `view-${view}`;
+    section.hidden = !active;
+    if (active) activeView = section;
+  });
+  $$(".nav-tab").forEach(button => {
+    const active = button.dataset.view === view;
+    button.classList.toggle("is-active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  if (activeView) {
+    activeView.classList.remove("is-entering");
+    requestAnimationFrame(() => activeView.classList.add("is-entering"));
+    activeView.addEventListener("animationend", () => activeView.classList.remove("is-entering"), { once: true });
+  }
 }
 
 function itemById(itemId) {
@@ -230,6 +289,11 @@ $("#add-item").addEventListener("click", () => openItemDialog());
 $$(".nav-tab").forEach(button => button.addEventListener("click", () => showView(button.dataset.view)));
 $$('[data-close]').forEach(button => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
 [elements.search, elements.category, elements.location, elements.status].forEach(control => control.addEventListener("input", renderInventory));
+
+elements.theme.addEventListener("change", () => {
+  applyTheme(elements.theme.value, true);
+  showToast(`${elements.theme.options[elements.theme.selectedIndex].text} theme preference saved.`);
+});
 
 elements.list.addEventListener("click", async event => {
   const button = event.target.closest("button[data-action]");
