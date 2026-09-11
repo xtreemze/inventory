@@ -1,72 +1,20 @@
 {
   "name": "inventory",
-  "version": "1.0.0",
-  "description": "Inventory Management",
-  "main": "index.html",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first inventory management PWA",
   "scripts": {
-    "dev": "webpack-dev-server --host localhost --port 8080 --env=dev --inline --hot --profile --open",
-    "hotDebug": "webpack-dev-server --host localhost --port 8080 --env=dev --inline --hot --profile",
-    "debug": "webpack-dev-server --host localhost --port 8080 --env=dev --profile",
-    "net2": "webpack-dev-server --host 192.168.1.227 --port 80 --env=dev --profile --open",
-    "watch": "webpack --progress --colors --env=dev --profile --watch",
-    "exportp": "node ./rmDir.js && webpack --env=prod --profile --progress --colors",
-    "rm": "node ./rmDir.js",
-    "clean": "node ./clean.js && npm i -D && npm up -D",
-    "eslint-check": "eslint --print-config .eslintrc.js | eslint-config-prettier-check"
+    "check": "node --check src/domain.mjs && node --check src/storage.mjs && node --check src/app.mjs && node --check sw.js",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xtreemze/inventory.git"
   },
-  "author": "Carlos Velasco",
   "license": "SEE LICENSE IN LICENSE",
-  "bugs": {
-    "url": "https://github.com/xtreemze/inventory/issues"
-  },
-  "homepage": "https://github.com/xtreemze/inventory#readme",
-  "browserslist": [
-    "> 1%",
-    "last 2 versions"
-  ],
-  "dependencies": {
-    "offline-plugin": "^4.8.5",
-    "webpack": "^3.11.0",
-    "html-minifier-webpack-plugin": "^1.1.1",
-    "html-webpack-plugin": "^2.30.1",
-    "extract-text-webpack-plugin": "^3.0.2",
-    "uglifyjs-webpack-plugin": "^1.2.2",
-    "mongodb-stitch": "^3.0.1"
-  },
-  "devDependencies": {
-    "@types/materialize-css": "^1.0.0",
-    "autoprefixer": "^8.0.0",
-    "browserslist": "^3.1.1",
-    "css-loader": "^0.28.10",
-    "cssnano": "^3.10.0",
-    "cssnano-preset-advanced": "^4.0.0-rc.2",
-    "eslint": "^4.18.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-import": "^2.9.0",
-    "eslint-plugin-prettier": "^2.6.0",
-    "extract-loader": "^1.0.1",
-    "file-loader": "^1.1.10",
-    "html-loader": "^0.5.1",
-    "image-webpack-loader": "^4.1.0",
-    "material-design-icons": "^3.0.1",
-    "materialize-css": "^1.0.0-alpha.4",
-    "node-sass": "^4.7.2",
-    "postcss": "^6.0.19",
-    "postcss-loader": "^2.1.1",
-    "postcss-scss": "^1.0.4",
-    "postcss-uncss": "^0.16.1",
-    "precss": "^3.1.2",
-    "prettier": "^1.11.1",
-    "rimraf": "^2.6.2",
-    "sass-loader": "^6.0.6",
-    "style-loader": "^0.20.2",
-    "uncss": "^0.16.1",
-    "url-loader": "^0.6.2",
-    "webpack-dev-server": "^2.11.2"
+  "engines": {
+    "node": ">=22"
   }
 }
