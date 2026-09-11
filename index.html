@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="A local-first inventory manager for tracking stock, checkouts, returns, and activity.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'">
+  <title>Inventory</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to inventory</a>
+  <header class="topbar">
+    <div class="brand-row">
+      <div class="brand-mark" aria-hidden="true">I</div>
+      <div><p class="eyebrow">Resource operations</p><h1>Inventory</h1></div>
+    </div>
+    <nav class="nav-tabs" aria-label="Primary">
+      <button class="nav-tab is-active" data-view="inventory" type="button">Inventory</button>
+      <button class="nav-tab" data-view="activity" type="button">Activity</button>
+      <button class="nav-tab" data-view="data" type="button">Data</button>
+    </nav>
+    <label class="operator-field"><span>Operator</span><input id="operator" autocomplete="name" maxlength="80" placeholder="Local audit label"></label>
+  </header>
+
+  <main id="main" class="shell">
+    <section class="summary-grid" aria-label="Inventory summary">
+      <article class="metric"><span>Active items</span><strong id="metric-items">0</strong></article>
+      <article class="metric"><span>Total units</span><strong id="metric-units">0</strong></article>
+      <article class="metric"><span>Checked out</span><strong id="metric-out">0</strong></article>
+      <article class="metric"><span>Low availability</span><strong id="metric-low">0</strong></article>
+    </section>
+
+    <section id="view-inventory" class="view" aria-labelledby="inventory-heading">
+      <div class="section-heading">
+        <div><p class="eyebrow">Current stock</p><h2 id="inventory-heading">Inventory</h2></div>
+        <button id="add-item" class="button primary" type="button">Add item</button>
+      </div>
+      <div class="toolbar" role="search">
+        <label class="search-field"><span class="sr-only">Search inventory</span><input id="search" type="search" placeholder="Search name, SKU, category, or location"></label>
+        <label><span class="sr-only">Category</span><select id="filter-category"><option value="">All categories</option></select></label>
+        <label><span class="sr-only">Location</span><select id="filter-location"><option value="">All locations</option></select></label>
+        <label><span class="sr-only">Status</span><select id="filter-status"><option value="">All statuses</option><option value="available">Available</option><option value="low">Low availability</option><option value="out">Fully checked out</option><option value="archived">Archived</option></select></label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>Availability</th><th>Location</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody id="inventory-list"></tbody>
+        </table>
+        <div id="inventory-empty" class="empty-state" hidden><h3>No matching inventory</h3><p>Add an item, load the sample dataset, or change the current filters.</p></div>
+      </div>
+    </section>
+
+    <section id="view-activity" class="view" aria-labelledby="activity-heading" hidden>
+      <div class="section-heading"><div><p class="eyebrow">Audit trail</p><h2 id="activity-heading">Activity</h2></div></div>
+      <div id="activity-list" class="activity-list"></div>
+      <div id="activity-empty" class="empty-state" hidden><h3>No activity yet</h3><p>Changes to inventory will be recorded here.</p></div>
+    </section>
+
+    <section id="view-data" class="view" aria-labelledby="data-heading" hidden>
+      <div class="section-heading"><div><p class="eyebrow">Portability and recovery</p><h2 id="data-heading">Data</h2></div></div>
+      <div class="data-grid">
+        <article class="panel"><h3>Backup</h3><p>Download a complete, versioned JSON backup. Backups include item state and the audit log.</p><button id="export-json" class="button" type="button">Export JSON backup</button></article>
+        <article class="panel"><h3>Spreadsheet export</h3><p>Export the current inventory as CSV with spreadsheet-formula injection protection.</p><button id="export-csv" class="button" type="button">Export CSV</button></article>
+        <article class="panel"><h3>Restore</h3><p>Replace local data with a previously exported Inventory JSON backup. The file is validated before it is accepted.</p><label class="button file-button">Import JSON<input id="import-json" type="file" accept="application/json,.json"></label></article>
+        <article class="panel"><h3>Sample dataset</h3><p>Load a small set of example resources to evaluate the workflows. Existing data is preserved.</p><button id="load-sample" class="button" type="button">Load sample items</button></article>
+      </div>
+      <aside class="security-note"><strong>Local-first trust boundary.</strong> Data stays in this browser and the operator field is an audit label, not authentication. Shared multi-user deployments require a server-side identity and authorization layer.</aside>
+    </section>
+  </main>
+
+  <dialog id="item-dialog">
+    <form id="item-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Inventory record</p><h2 id="item-dialog-title">Add item</h2></div><button class="icon-button" type="button" data-close="item-dialog" aria-label="Close">×</button></div>
+      <input id="item-id" type="hidden">
+      <div class="form-grid">
+        <label class="wide">Name<input id="item-name" required maxlength="120" autocomplete="off"></label>
+        <label>SKU / asset tag<input id="item-sku" maxlength="80" autocomplete="off"></label>
+        <label>Category<input id="item-category" maxlength="80" autocomplete="off"></label>
+        <label>Location<input id="item-location" maxlength="120" autocomplete="off"></label>
+        <label>Total quantity<input id="item-quantity" type="number" min="0" step="1" required value="1"></label>
+        <label>Low-stock threshold<input id="item-reorder" type="number" min="0" step="1" required value="0"></label>
+        <label class="wide">Notes<textarea id="item-notes" rows="3" maxlength="1000"></textarea></label>
+      </div>
+      <p id="item-form-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close="item-dialog">Cancel</button><button class="button primary" type="submit">Save item</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="checkout-dialog">
+    <form id="checkout-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Movement</p><h2>Check out item</h2></div><button class="icon-button" type="button" data-close="checkout-dialog" aria-label="Close">×</button></div>
+      <input id="checkout-item-id" type="hidden"><p id="checkout-item-label" class="dialog-context"></p>
+      <div class="form-grid">
+        <label>Quantity<input id="checkout-quantity" type="number" min="1" step="1" required value="1"></label>
+        <label>Borrower / destination<input id="checkout-borrower" required maxlength="120" autocomplete="off"></label>
+        <label>Due date<input id="checkout-due" type="date"></label>
+        <label class="wide">Note<textarea id="checkout-note" rows="2" maxlength="500"></textarea></label>
+      </div>
+      <p id="checkout-form-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close="checkout-dialog">Cancel</button><button class="button primary" type="submit">Check out</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="return-dialog">
+    <form id="return-form">
+      <div class="dialog-heading"><div><p class="eyebrow">Movement</p><h2>Return item</h2></div><button class="icon-button" type="button" data-close="return-dialog" aria-label="Close">×</button></div>
+      <input id="return-item-id" type="hidden"><p id="return-item-label" class="dialog-context"></p>
+      <div class="form-grid"><label>Quantity<input id="return-quantity" type="number" min="1" step="1" required value="1"></label><label class="wide">Note<textarea id="return-note" rows="2" maxlength="500"></textarea></label></div>
+      <p id="return-form-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button class="button" type="button" data-close="return-dialog">Cancel</button><button class="button primary" type="submit">Return</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="./src/app.mjs"></script>
+</body>
+</html>
